@@ -10,6 +10,11 @@ __pycache__/
 *.so
 .Python
 env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+agrisaathi_env/
 build/
 develop-eggs/
 dist/

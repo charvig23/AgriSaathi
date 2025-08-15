@@ -6,7 +6,7 @@ from sqlalchemy import Column, String, Text, JSON, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
-from schemas import AgentStatus, TaskStatus, ToolType
+from schemas import AgentStatus, TaskStatus, ToolType, LLMModel
 
 class Agent(Base):
     """
@@ -29,6 +29,12 @@ class Agent(Base):
     system_prompt = Column(Text)
     instructions = Column(Text)
     capabilities = Column(JSON)  # List of capabilities
+    
+    # LLM Configuration for intelligent tool selection
+    llm_model = Column(String(50), default=LLMModel.NONE)
+    llm_config = Column(JSON)  # LLM-specific configuration (API keys, parameters, etc.)
+    tool_selection_prompt = Column(Text)  # Custom prompt for tool selection
+    enable_intelligent_routing = Column(Boolean, default=False)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

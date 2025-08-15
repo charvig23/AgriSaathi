@@ -25,6 +25,34 @@ class ToolType(str, Enum):
     LLM = "llm"
     CUSTOM = "custom"
 
+class LLMModel(str, Enum):
+    # OpenAI GPT Models (Free tier available)
+    GPT_4O_MINI = "gpt-4o-mini"  # Most cost-effective GPT-4 class model
+    GPT_3_5_TURBO = "gpt-3.5-turbo"
+    GPT_4O = "gpt-4o"
+    GPT_4_TURBO = "gpt-4-turbo"
+    GPT_4 = "gpt-4"
+    
+    # Google Models (Free tier available)
+    GEMINI_PRO = "gemini-pro"
+    GEMINI_PRO_VISION = "gemini-pro-vision"
+    GEMINI_1_5_FLASH = "gemini-1.5-flash"
+    GEMINI_1_5_PRO = "gemini-1.5-pro"
+    
+    # Local/Open Source Models (Free with local hosting)
+    LLAMA2_7B = "llama2-7b"
+    LLAMA2_13B = "llama2-13b"
+    LLAMA2_70B = "llama2-70b"
+    MISTRAL_7B = "mistral-7b"
+    MIXTRAL_8X7B = "mixtral-8x7b"
+    GEMMA_2B = "gemma-2b"
+    GEMMA_7B = "gemma-7b"
+    CODELLAMA_7B = "codellama-7b"
+    OPENCHAT_7B = "openchat-7b"
+    
+    # Default/None option
+    NONE = "none"
+
 # Base schemas
 class BaseSchema(BaseModel):
     class Config:
@@ -112,6 +140,15 @@ class AgentCreateSchema(BaseModel):
     system_prompt: Optional[str] = None
     instructions: Optional[str] = None
     capabilities: Optional[List[str]] = Field(default_factory=list)
+    
+    # LLM Configuration for intelligent tool selection
+    llm_model: LLMModel = LLMModel.NONE
+    llm_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    tool_selection_prompt: Optional[str] = Field(
+        default="Based on the user query and available tools, select the most appropriate tool to use. "
+                "Consider the tool descriptions and capabilities."
+    )
+    enable_intelligent_routing: bool = Field(default=False)
 
 class AgentUpdateSchema(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
@@ -123,6 +160,12 @@ class AgentUpdateSchema(BaseModel):
     system_prompt: Optional[str] = None
     instructions: Optional[str] = None
     capabilities: Optional[List[str]] = None
+    
+    # LLM Configuration updates
+    llm_model: Optional[LLMModel] = None
+    llm_config: Optional[Dict[str, Any]] = None
+    tool_selection_prompt: Optional[str] = None
+    enable_intelligent_routing: Optional[bool] = None
 
 class AgentResponseSchema(BaseSchema):
     id: str
@@ -138,12 +181,31 @@ class AgentResponseSchema(BaseSchema):
     created_at: datetime
     updated_at: datetime
     published_at: Optional[datetime]
+    
+    # LLM Configuration in response
+    llm_model: LLMModel
+    llm_config: Optional[Dict[str, Any]]
+    tool_selection_prompt: Optional[str]
+    enable_intelligent_routing: bool
+    
     tools: List[ToolResponseSchema] = Field(default_factory=list)
     tasks: List[TaskResponseSchema] = Field(default_factory=list)
 
 class AgentPublishSchema(BaseModel):
     version: Optional[str] = Field(None, pattern=r"^\d+\.\d+\.\d+$")
     notes: Optional[str] = None
+
+# Tool Selection schemas for LLM-based routing
+class ToolSelectionRequest(BaseModel):
+    user_query: str = Field(..., min_length=1, description="The user's query or request")
+    context: Optional[str] = Field(None, description="Additional context for tool selection")
+    
+class ToolSelectionResponse(BaseModel):
+    selected_tool_id: str = Field(..., description="ID of the selected tool")
+    selected_tool_name: str = Field(..., description="Name of the selected tool")
+    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in tool selection")
+    reasoning: str = Field(..., description="Explanation for why this tool was selected")
+    fallback_tools: Optional[List[str]] = Field(default_factory=list, description="Alternative tool IDs if primary fails")
 
 # Bulk operation schemas
 class AgentImportSchema(BaseModel):
@@ -155,6 +217,13 @@ class AgentImportSchema(BaseModel):
     system_prompt: Optional[str] = None
     instructions: Optional[str] = None
     capabilities: Optional[List[str]] = Field(default_factory=list)
+    
+    # LLM Configuration for imports
+    llm_model: LLMModel = LLMModel.NONE
+    llm_config: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    tool_selection_prompt: Optional[str] = None
+    enable_intelligent_routing: bool = Field(default=False)
+    
     tools: List[ToolCreateSchema] = Field(default_factory=list)
     tasks: List[TaskCreateSchema] = Field(default_factory=list)
 
